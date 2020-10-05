@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Windows.Forms;
 
 namespace Mp3TagsSetter
 {
@@ -35,53 +36,41 @@ namespace Mp3TagsSetter
                         if (!albumDirectoryNameRegex.IsMatch(albumDirectoryNameTest))
                             len = len - 1; //patrzymy poziom wyżej, bo w albumie mogły być np. 2 CD w osobnych folderach
 
-                        var fileName = "";
-                        var trackNumber = "";
-                        var trackName = "";
-                        var albumDirectoryName = "";
-                        var albumYear = "";
-                        var albumName = "";
-                        var artist = "";
-                        var genre = "";
+                        var fileName = Path.GetFileNameWithoutExtension(filePath);
 
-                        fileName = Path.GetFileNameWithoutExtension(filePath);
+                        var fileData = new FileData();
 
                         bool isAlbumSplit = albumDirectoryNameTest.Contains("(Split)");
 
                         if (!isAlbumSplit)
                         {
-                            trackName = fileName.Substring(5);
-                            artist = filePathSplitted[len - 3];
+                            fileData.trackName = fileName.Substring(5);
+                            fileData.artists[0] = filePathSplitted[len - 3];
                         }
                         else //np. "08 - Malum - Desecrating the False Temples"
                         {
                             var index = fileName.IndexOf('-', fileName.IndexOf('-') + 1);
-                            trackName = fileName.Substring(index + 2); // 2 znaki po drugim myślniku
-                            artist = fileName.Substring(5, index - 6); // między pierwszym a drugim myślnikiem
+                            fileData.trackName = fileName.Substring(index + 2); // 2 znaki po drugim myślniku
+                            fileData.artists[0] = fileName.Substring(5, index - 6); // między pierwszym a drugim myślnikiem
                         }
 
-                        trackNumber = fileName.Substring(0, 2);
+                        fileData.trackNumber = Convert.ToUInt32(fileName.Substring(0, 2));
 
-                        albumDirectoryName = filePathSplitted[len - 2];
-                        albumYear = albumDirectoryName.Substring(0, 4);
-                        albumName = albumDirectoryName.Substring(7);
+                        var albumDirectoryName = filePathSplitted[len - 2];
+                        fileData.albumYear = Convert.ToUInt32(albumDirectoryName.Substring(0, 4));
+                        fileData.albumName = albumDirectoryName.Substring(7);
 
-                        genre = filePathSplitted[len - 4];
-
-                        string[] artists = new string[1];
-                        artists[0] = artist;
-                        string[] genres = new string[1];
-                        genres[0] = genre;
+                        fileData.genres[0] = filePathSplitted[len - 4];
 
                         var file = TagLib.File.Create(filePath);
 
-                        file.Tag.Track = Convert.ToUInt32(trackNumber);
-                        file.Tag.Title = trackName;
-                        file.Tag.Year = Convert.ToUInt32(albumYear);
-                        file.Tag.Album = albumName;
-                        file.Tag.AlbumArtists = artists;
-                        file.Tag.Performers = artists;
-                        file.Tag.Genres = genres;
+                        file.Tag.Track = fileData.trackNumber;
+                        file.Tag.Title = fileData.trackName;
+                        file.Tag.Year = fileData.albumYear;
+                        file.Tag.Album = fileData.albumName;
+                        file.Tag.AlbumArtists = fileData.artists;
+                        file.Tag.Performers = fileData.artists;
+                        file.Tag.Genres = fileData.genres;
 
                         file.Save();
                     }
@@ -90,6 +79,7 @@ namespace Mp3TagsSetter
                     }
                 }
             }
+            MessageBox.Show("Zakończono przetwarzanie", "Informacja");
         }
     }
 }
