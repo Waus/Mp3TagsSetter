@@ -29,6 +29,7 @@ namespace Mp3TagsSetter
                 {
                     try
                     {
+                        File.SetAttributes(filePath, File.GetAttributes(filePath) & ~FileAttributes.ReadOnly);
                         string[] filePathSplitted = filePath.Split('\\');
                         var len = filePathSplitted.Length;
 
@@ -39,6 +40,8 @@ namespace Mp3TagsSetter
                         var fileName = Path.GetFileNameWithoutExtension(filePath);
 
                         var fileData = new FileData();
+                        fileData.artists = new string[1];
+                        fileData.genres = new string[1];
 
                         bool isAlbumSplit = albumDirectoryNameTest.Contains("(Split)");
 
