@@ -11,7 +11,7 @@ namespace Mp3TagsSetter
         // Regex to remove "(Demo)" and "(EP)" from folder names
         static Regex folderNameCleanupRegex = new Regex(@"\s*\((Demo|EP)\)$");
         // Regex to remove "Compilation", "Single", "Live", "Split" from album tag and picture name
-        static Regex folderNameKeepTagsRegex = new Regex(@"\s*\((Compilation|Single|Live|Split|2CD)\)$");
+        static Regex folderNameKeepTagsRegex = new Regex(@"\s*\((Compilation|Single|Live|Split|2CD|3CD|4CD|5CD)\)$");
         // Regex to check if the directory name is an album name
         static Regex albumDirectoryNameRegex = new Regex(@"^\d{4}\s\-\s[\w* [(\.]+"); // "2020 - Tytuł"
 
@@ -105,7 +105,13 @@ namespace Mp3TagsSetter
                 string newImageFilePath = Path.Combine(albumFolderPath, $"{correctAlbumName}{Path.GetExtension(imageFilePath)}");
                 if (imageFilePath != newImageFilePath)
                 {
-                    System.IO.File.Move(imageFilePath, newImageFilePath);
+                    try
+                    {
+                        System.IO.File.Move(imageFilePath, newImageFilePath);
+                    }
+                    catch (Exception)
+                    {
+                    }
                 }
             }
         }

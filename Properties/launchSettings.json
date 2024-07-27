@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Mp3TagsSetter": {
+      "commandName": "Project",
+      "workingDirectory": "C:\\Git\\Mp3TagsSetter\\bin\\Debug"
+    }
+  }
+}
