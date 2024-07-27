@@ -9,6 +9,13 @@ namespace Mp3TagsSetter
 {
     static class Program
     {
+        // Regex to remove "(Demo)" and "(EP)" from folder names
+        static Regex folderNameCleanupRegex = new Regex(@"\s*\((Demo|EP)\)$");
+        // Regex to remove "Compilation", "Single", "Live", "Split" from album tag and picture name
+        static Regex folderNameKeepTagsRegex = new Regex(@"\s*\((Compilation|Single|Live|Split|2CD)\)$");
+        // Regex to check if the directory name is an album name
+        static Regex albumDirectoryNameRegex = new Regex(@"^\d{4}\s\-\s[\w* [(\.]+"); // "2020 - Tytuł"
+
         [STAThread]
         static void Main()
         {
@@ -19,9 +26,6 @@ namespace Mp3TagsSetter
 
         private static void CleanFolderNames()
         {
-            // Regex to remove "(Demo)" and "(EP)" from folder names
-            Regex folderNameCleanupRegex = new Regex(@"\s*\((Demo|EP)\)$");
-
             string path = Directory.GetCurrentDirectory();
             var allDirectories = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
 
@@ -47,50 +51,68 @@ namespace Mp3TagsSetter
 
         private static void SetFolderNames()
         {
-            Regex folderNameKeepTagsRegex = new Regex(@"\s*\((Compilation|Single|Live|Split)\)$");
-
             string path = Directory.GetCurrentDirectory();
             var allDirectories = Directory.GetDirectories(path, "*", SearchOption.AllDirectories);
 
             foreach (var albumFolderPath in allDirectories)
             {
-                try
+                var albumDirectoryName = Path.GetFileName(albumFolderPath);
+                var albumDIrectoryMatch = albumDirectoryNameRegex.Match(albumDirectoryName);
+                if (albumDIrectoryMatch.Success)
                 {
-                    var albumDirectoryName = Path.GetFileName(albumFolderPath);
-                    var folderTagsMatch = folderNameKeepTagsRegex.Match(albumDirectoryName.Substring(7));
-
-                    var correctAlbumName = folderTagsMatch.Success
-                        ? albumDirectoryName.Substring(7).Replace(folderTagsMatch.ToString(), string.Empty).Trim()
-                        : albumDirectoryName.Substring(7);
-
-
-                    string[] imageFiles = System.IO.Directory.GetFiles(albumFolderPath, "*.*", SearchOption.TopDirectoryOnly);
-                    string[] imageExtensions = { ".jpg", ".jpeg", ".png" };
-                    string[] validImageFiles = imageFiles.Where(f => imageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase) &&
-                                                                      (System.IO.File.GetAttributes(f) & FileAttributes.Hidden) == 0 &&
-                                                                      (System.IO.File.GetAttributes(f) & FileAttributes.System) == 0).ToArray();
-
-                    if (validImageFiles.Length == 1)
+                    try
                     {
-                        string imageFilePath = validImageFiles[0];
-                        string newImageFilePath = Path.Combine(albumFolderPath, $"{correctAlbumName}{Path.GetExtension(imageFilePath)}");
-                        if (imageFilePath != newImageFilePath)
+                        var folderTagsMatch = folderNameKeepTagsRegex.Match(albumDirectoryName.Substring(7));
+
+                        var correctAlbumName = folderTagsMatch.Success
+                            ? albumDirectoryName.Substring(7).Replace(folderTagsMatch.ToString(), string.Empty).Trim()
+                            : albumDirectoryName.Substring(7);
+
+                        string[] cdFoldersInAlbumFolder = System.IO.Directory.GetDirectories(albumFolderPath, "*.*", SearchOption.TopDirectoryOnly);
+
+                        if (cdFoldersInAlbumFolder.Length == 0)
                         {
-                            System.IO.File.Move(imageFilePath, newImageFilePath);
+                            changePictureName(albumFolderPath, correctAlbumName);
+                        }
+                        else
+                        {
+                            foreach (String cdFolder in cdFoldersInAlbumFolder)
+                            {
+                                var cdAlbumFolderPath = Path.Combine(albumFolderPath, cdFolder);
+                                changePictureName(cdAlbumFolderPath, correctAlbumName);
+                            }
+                            Path.GetFileName(albumFolderPath);
                         }
                     }
+                    catch (Exception ignored)
+                    {
+                    }
+
                 }
-                catch (Exception ignored)
+            }
+        }
+
+        private static void changePictureName(String albumFolderPath, String correctAlbumName)
+        {
+            string[] imageFiles = System.IO.Directory.GetFiles(albumFolderPath, "*.*", SearchOption.TopDirectoryOnly);
+            string[] imageExtensions = { ".jpg", ".jpeg", ".png" };
+            string[] validImageFiles = imageFiles.Where(f => imageExtensions.Contains(Path.GetExtension(f), StringComparer.OrdinalIgnoreCase) &&
+                                                              (System.IO.File.GetAttributes(f) & FileAttributes.Hidden) == 0 &&
+                                                              (System.IO.File.GetAttributes(f) & FileAttributes.System) == 0).ToArray();
+
+            if (validImageFiles.Length == 1)
+            {
+                string imageFilePath = validImageFiles[0];
+                string newImageFilePath = Path.Combine(albumFolderPath, $"{correctAlbumName}{Path.GetExtension(imageFilePath)}");
+                if (imageFilePath != newImageFilePath)
                 {
+                    System.IO.File.Move(imageFilePath, newImageFilePath);
                 }
             }
         }
 
         public static void SetMp3Tags()
         {
-            Regex albumDirectoryNameRegex = new Regex(@"^\d\d\d\d\s\-\s[\w* [(\.]+"); // "2020 - Tytuł"
-            Regex folderNameKeepTagsRegex = new Regex(@"\s*\((Compilation|Single|Live|Split)\)$");
-
             string path = Directory.GetCurrentDirectory();
             var allFiles = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
             foreach (string filePath in allFiles)
@@ -106,9 +128,14 @@ namespace Mp3TagsSetter
                         string[] filePathSplitted = filePath.Split(Path.DirectorySeparatorChar);
                         var len = filePathSplitted.Length;
 
-                        var albumDirectoryNameTest = filePathSplitted[len - 2];
-                        if (!albumDirectoryNameRegex.IsMatch(albumDirectoryNameTest))
+                        var albumFolderName = filePathSplitted[len - 2];
+                        var albumDirectoryHasFoldersWithCds = albumDirectoryNameRegex.IsMatch(albumFolderName);
+                        if (!albumDirectoryHasFoldersWithCds)
+                        {
                             len = len - 1; // Look one level up if the album folder might contain multiple CDs
+                            albumFolderName = filePathSplitted[len - 2];
+                        }
+                            
 
                         var fileName = Path.GetFileNameWithoutExtension(filePath);
 
@@ -118,7 +145,7 @@ namespace Mp3TagsSetter
                             genres = new string[1]
                         };
 
-                        bool isAlbumSplit = albumDirectoryNameTest.Contains("(Split)");
+                        bool isAlbumSplit = albumFolderName.Contains("(Split)");
 
                         if (!isAlbumSplit)
                         {
@@ -143,7 +170,21 @@ namespace Mp3TagsSetter
                             ? albumDirectoryName.Substring(7).Replace(folderTagsMatch.ToString(), string.Empty).Trim()
                             : albumDirectoryName.Substring(7);
 
-                        fileData.albumName = correctAlbumName;
+                        string albumDirectoryNamePath = string.Join(Path.DirectorySeparatorChar.ToString(), filePathSplitted.Take(len - 1));
+                        string[] cdFoldersInAlbumFolder = System.IO.Directory.GetDirectories(albumDirectoryNamePath, "*.*", SearchOption.TopDirectoryOnly);
+
+                        if (cdFoldersInAlbumFolder.Length == 0)
+                        {
+                            fileData.albumName = correctAlbumName;
+                        }
+                        else
+                        {
+                            {
+                                var cdAlbumFolderName = filePathSplitted[len - 1];
+                                var correctCdAlbumName = correctAlbumName + " - " + cdAlbumFolderName;
+                                fileData.albumName = correctCdAlbumName;
+                            }
+                        }
 
                         fileData.genres[0] = filePathSplitted[len - 4];
 
