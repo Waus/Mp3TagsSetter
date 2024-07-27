@@ -1,2 +1,1 @@
-wejść w cmd tam gdzie jest csproj i wpisać komendę:
 dotnet publish -r win-x64 -c Release --self-contained true /p:PublishSingleFile=true
