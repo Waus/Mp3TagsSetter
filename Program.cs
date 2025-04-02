@@ -139,6 +139,9 @@ namespace Mp3TagsSetter
                     tagFile.Tag.Performers = fileData.artists;
                     tagFile.Tag.Genres = fileData.genres;
 
+                    // Ustawiamy komentarz na pusty string
+                    tagFile.Tag.Comment = string.Empty;
+
                     // Znajdź plik graficzny w folderze albumDirectoryNamePath
                     string coverPath = FindCoverImageInFolder(albumDirectoryNamePath);
 
@@ -187,13 +190,13 @@ namespace Mp3TagsSetter
 
             // Znajdź wszystkie pliki w folderze, filtrując po rozszerzeniach
             var imageFiles = Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories)
-                          .Where(file => imageExtensions.Contains(Path.GetExtension(file).ToLower()))
-                          .Where(file => {
-                              var attr = System.IO.File.GetAttributes(file);
-                              return (attr & FileAttributes.Hidden) == 0
-                                  && (attr & FileAttributes.System) == 0;
-                          })
-                          .ToList();
+                                      .Where(file => imageExtensions.Contains(Path.GetExtension(file).ToLower()))
+                                      .Where(file => {
+                                          var attr = System.IO.File.GetAttributes(file);
+                                          return (attr & FileAttributes.Hidden) == 0
+                                              && (attr & FileAttributes.System) == 0;
+                                      })
+                                      .ToList();
 
             // Założenie: w każdym folderze jest co najwyżej 1 plik graficzny z okładką
             return imageFiles.FirstOrDefault() ?? string.Empty;
