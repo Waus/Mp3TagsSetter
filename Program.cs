@@ -186,7 +186,7 @@ namespace Mp3TagsSetter
             var imageExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
 
             // Znajdź wszystkie pliki w folderze, filtrując po rozszerzeniach
-            var imageFiles = Directory.EnumerateFiles(folderPath, "*.*", SearchOption.TopDirectoryOnly)
+            var imageFiles = Directory.EnumerateFiles(folderPath, "*.*", SearchOption.AllDirectories)
                                       .Where(file => imageExtensions.Contains(Path.GetExtension(file).ToLower()))
                                       .ToList();
 
