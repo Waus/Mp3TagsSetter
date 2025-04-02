@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net9.0-windows7.0</TargetFramework>
     <UseWPF>false</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
